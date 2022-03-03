@@ -1,0 +1,25 @@
+#--------------------------- Simulation variables -----------------------------#
+  # Initalizes random number generator.
+  variable         rnd equal round(random(0,999999,${RANDOM}))
+#------------------------------------------------------------------------------#
+
+
+#---------------------------- Atomic setup ------------------------------------#
+  units            metal
+
+  # Create simulation box.
+  region            sim_box block 0 100 0 100 0 100 units box
+  create_box        2 sim_box
+
+  # Create liquid atoms.
+  create_atoms      1 random 10000 ${rnd} sim_box
+  create_atoms      2 random 10000 ${rnd} sim_box
+
+  # Interatomic potential information.
+  pair_style       none
+#------------------------------------------------------------------------------#
+
+
+#----------------------------- Run simulation ---------------------------------#
+  write_dump       all custom data/dump_${n}.gz id type x y z
+#------------------------------------------------------------------------------#

@@ -1,0 +1,30 @@
+#--------------------------- Simulation variables -----------------------------#
+  variable         n equal 6 # System size.
+#------------------------------------------------------------------------------#
+
+
+#---------------------------- Atomic setup ------------------------------------#
+  units            metal
+
+  # Create atoms.
+  lattice          diamond 1.0 
+  region           sim_box block 0 ${n} 0 ${n} 0 ${n}
+  create_box       2 sim_box
+  create_atoms     1 box &
+                   basis 1 1 &
+                   basis 2 1 &
+                   basis 3 1 &
+                   basis 4 1 &
+                   basis 5 2 &
+                   basis 6 2 &
+                   basis 7 2 &
+                   basis 8 2
+
+  # Interatomic potential information.
+  pair_style       none
+#------------------------------------------------------------------------------#
+
+
+#----------------------------- Run simulation ---------------------------------#
+  write_dump       all custom data/dump_zincblende.gz id type x y z
+#------------------------------------------------------------------------------#

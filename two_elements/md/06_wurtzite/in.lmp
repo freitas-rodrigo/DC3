@@ -1,0 +1,87 @@
+#--------------------------- Simulation variables -----------------------------#
+  variable         t_eq   equal 10000 # Equilibration time [ts].
+  variable         t      equal 90000 # Simulation time [ts].
+  variable         dt     equal 1     # Timestep [fs].
+  variable         dt_t   equal 100   # Thermo information stride [ts].
+  variable         dt_d   equal 10000 # Dump output stride [ts].
+  variable         P      equal 0     # System pressure.
+  variable         damp_T equal 100   # Thermostat damping [fs].
+  variable         damp_P equal 1000  # Barostat damping [fs].
+  variable         nx     equal 9     # System size.
+  variable         ny     equal 5     # System size.
+  variable         nz     equal 6     # System size.
+
+  # Define simulation temperature.
+  variable         Tm equal 850 # Melting point [K].
+  variable         T  equal $(v_Th*v_Tm) # Simulation temperature.
+
+  # Initalizes random number generator.
+  variable         rnd equal round(random(0,999999,${RANDOM}))
+#------------------------------------------------------------------------------#
+
+
+#---------------------------- Atomic setup ------------------------------------#
+  units            real 
+  atom_style       charge
+  timestep         ${dt}
+
+  # Create atoms.
+  lattice          custom 3.28                       &
+                   a1    1.0 0.0        0.0          &
+                   a2    0.0 $(sqrt(3)) 0.0          &
+                   a3    0.0 0.0        $(5.28/3.28) &
+                   basis 0.0 0.0    0.0 &
+                   basis 0.5 0.5    0.0 &
+                   basis 0.5 $(5/6) 0.5 &
+                   basis 0.0 $(1/3) 0.5
+  region           sim_box block 0 ${nx} 0 ${ny} 0 ${nz}
+  create_box       2 sim_box
+  create_atoms     1 box
+  lattice          custom 3.28 origin 0 0 $(3/8)     &
+                   a1    1.0 0.0        0.0          &
+                   a2    0.0 $(sqrt(3)) 0.0          &
+                   a3    0.0 0.0        $(5.28/3.28) &
+                   basis 0.0 0.0    0.0 &
+                   basis 0.5 0.5    0.0 &
+                   basis 0.5 $(5/6) 0.5 &
+                   basis 0.0 $(1/3) 0.5
+  create_atoms     2 box
+
+  # Interatomic potential information.
+  pair_style       reax/c ${potdir}/lmp_control
+  pair_coeff       * * ${potdir}/ffield.reax.ZnOH Zn O
+  neigh_modify     delay 0
+  mass             1 65.3900
+  mass             2 15.9990
+#------------------------------------------------------------------------------#
+
+
+#--------------------------- Output setup -------------------------------------#
+  thermo_style     custom step temp pe lx lz
+  thermo           ${dt_t}
+  fix              f1 all print ${dt_t} "$(step) $(lx/v_nx) $(pe/atoms)" &
+                   title "# step lattice_parameter pe" & 
+                   screen no file data/thermo/thermo_${Th}.dat
+#------------------------------------------------------------------------------#
+
+
+#----------------------------- Run simulation ---------------------------------#
+  # Equilibrate system (temperature and pressure).
+  velocity         all create ${T} ${rnd} dist gaussian
+  fix              f2 all nph iso ${P} ${P} ${damp_P}
+  fix              f3 all qeq/reax 1 0.0 10.0 1.0e-6 ${potdir}/param.qeq
+  variable         rnd equal round(random(0,999999,0)) # Generates new rnd #.
+  fix              f4 all temp/csvr ${T} ${T} ${damp_T} ${rnd}
+  run              ${t_eq}
+ 
+  # Run simulation.
+  dump             d1 all custom/gz ${dt_d} data/dump/dump_${Th}_*.gz &
+                   id type x y z
+  run              ${t}
+  undump           d1
+
+  # Relax last snapshot.
+  min_modify       line forcezero
+  minimize         0 0 100000 100000
+  write_dump       all custom data/dump/dump_${Th}_relaxed.gz id type x y z
+#------------------------------------------------------------------------------#

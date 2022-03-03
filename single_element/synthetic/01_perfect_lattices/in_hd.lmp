@@ -1,0 +1,27 @@
+#--------------------------- Simulation variables -----------------------------#
+  variable         nx equal 9 # System size.
+  variable         ny equal 5 # System size.
+  variable         nz equal 6 # System size.
+#------------------------------------------------------------------------------#
+
+
+#---------------------------- Atomic setup ------------------------------------#
+  units            metal
+
+  # Create atoms.
+  variable         a equal 1.0
+  lattice          hcp ${a}
+  region           sim_box block 0 ${nx} 0 ${ny} 0 ${nz}
+  create_box       1 sim_box
+  create_atoms     1 box
+  lattice          hcp ${a} origin 0 0 $(3/8)
+  create_atoms     1 box
+
+  # Interatomic potential information.
+  pair_style       none
+#------------------------------------------------------------------------------#
+
+
+#----------------------------- Run simulation ---------------------------------#
+  write_dump       all custom data/dump_hd.gz id type x y z
+#------------------------------------------------------------------------------#

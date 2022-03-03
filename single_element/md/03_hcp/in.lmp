@@ -1,0 +1,68 @@
+#--------------------------- Simulation variables -----------------------------#
+  variable         t_eq   equal 10000 # Equilibration time [ts].
+  variable         t      equal 90000 # Simulation time [ts].
+  variable         dt     equal 0.001 # Timestep [ps].
+  variable         dt_t   equal 100   # Thermo information stride [ts].
+  variable         dt_d   equal 10000 # Dump output stride [ts].
+  variable         P      equal 0     # System pressure.
+  variable         damp_T equal 0.1   # Thermostat damping [ps].
+  variable         damp_P equal 1.0   # Barostat damping [ps].
+  variable         nx     equal 11    # System size.
+  variable         ny     equal 7     # System size.
+  variable         nz     equal 7     # System size.
+
+  # Define simulation temperature.
+  variable         Tm equal 1941 # Melting point [K].
+  variable         T  equal $(v_Th*v_Tm) # Simulation temperature.
+
+  # Initalizes random number generator.
+  variable         rnd equal round(random(0,999999,${RANDOM}))
+#------------------------------------------------------------------------------#
+
+
+#---------------------------- Atomic setup ------------------------------------#
+  units            metal
+  timestep         ${dt}
+
+  # Create atoms.
+  lattice          hcp 3.0
+  region           sim_box block 0 ${nx} 0 ${ny} 0 ${nz}
+  create_box       1 sim_box
+  create_atoms     1 box
+
+  # Interatomic potential information.
+  pair_style       meam/spline
+  pair_coeff       * * ${potdir}/Ti.meam.spline Ti
+  neigh_modify     delay 0
+  mass             1 47.867
+#------------------------------------------------------------------------------#
+
+
+#--------------------------- Output setup -------------------------------------#
+  thermo_style     custom step temp pe
+  thermo           ${dt_t}
+  fix              f1 all print ${dt_t} "$(step) $(lx/v_nx) $(pe/atoms)" &
+                   title "# step lattice_parameter pe" &
+                   screen no file data/thermo/thermo_${Th}.dat
+#------------------------------------------------------------------------------#
+
+
+#----------------------------- Run simulation ---------------------------------#
+  # Equilibrate system (temperature and pressure).
+  velocity         all create ${T} ${rnd} dist gaussian
+  fix              f2 all nph iso ${P} ${P} ${damp_P}
+  variable         rnd equal round(random(0,999999,0)) # Generates new rnd #.
+  fix              f3 all temp/csvr ${T} ${T} ${damp_T} ${rnd}
+  run              ${t_eq}
+
+  # Run simulation.
+  dump             d1 all custom/gz ${dt_d} data/dump/dump_${Th}_*.gz &
+                   id type x y z
+  run              ${t}
+  undump           d1
+
+  # Relax last snapshot.
+  min_modify       line forcezero
+  minimize         0 0 100000 100000
+  write_dump       all custom data/dump/dump_${Th}_relaxed.gz id type x y z
+#------------------------------------------------------------------------------#

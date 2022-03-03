@@ -1,0 +1,22 @@
+#--------------------------- Simulation variables -----------------------------#
+  variable         n equal 10 # System size.
+#------------------------------------------------------------------------------#
+
+
+#---------------------------- Atomic setup ------------------------------------#
+  units            metal
+
+  # Create atoms.
+  lattice          bcc 1.0
+  region           sim_box block 0 ${n} 0 ${n} 0 ${n}
+  create_box       2 sim_box
+  create_atoms     1 box basis 1 1 basis 2 2
+
+  # Interatomic potential information.
+  pair_style       none
+#------------------------------------------------------------------------------#
+
+
+#----------------------------- Run simulation ---------------------------------#
+  write_dump       all custom data/dump_B2.gz id type x y z
+#------------------------------------------------------------------------------#
