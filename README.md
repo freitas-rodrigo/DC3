@@ -4,7 +4,7 @@ This repository hosts the scripts necessary to reproduce all of the results from
 
   "A data-centric framework for crystal structure identification in atomistic simulations using machine learning"  
   Heejung Chung, Rodrigo Freitas, Gowoon Cheon, Evan Reed  
-  [Physical Review Materials (2022)](https://arxiv.org/abs/2010.04815)
+  [Physical Review Materials (2022)](https://doi.org/10.1103/PhysRevMaterials.6.043801)
 
 The benchmark data set can be found [here](https://www.dropbox.com/sh/8jrkyfyumz65w0h/AACUCdrFbNBtCnbQi9Cssv4La).
 
